@@ -107,6 +107,36 @@ Coverage:
 
 `Coverage (%) = (Observed hours / Expected hours) × 100`
 
+### 3.5 Multi-Station Data-Quality Comparison
+
+Script: `src/ingestion/compare_station_quality.py`
+
+Endpoint:
+`GET /v1/measurements`
+
+Query configuration:
+- Stations (repeated `station` parameter):
+  - `site_5106` (Vile Parle West)
+  - `site_5399` (Chakala–Andheri East)
+  - `site_5102` (Malad West)
+- Pollutants (repeated `parameter` parameter): `PM2.5`, `PM10`
+- Start: `2025-08-24`
+- End: `2025-08-30`
+- Aggregation: `hourly`
+
+Metrics computed per station and pollutant:
+- Unique observed hourly timestamps vs. expected hourly timestamps (168 hours)
+- Duplicate timestamp count (raw records minus unique timestamps, reported without silent removal)
+- Total missing timestamps, internal gaps (`<= last_observed`), and trailing gaps (`> last_observed`)
+- Coverage percentage
+- Average pollutant concentration (`mean` across non-null observations; missing readings are never treated as zero or imputed)
+- First and last observed timestamps
+
+Methodology:
+- All expected hourly timestamps from `2025-08-24 00:00` through `2025-08-30 23:00` (168 hours) are generated.
+- API rows are grouped by `(station_id, parameter_name)` without modifying or imputing missing values.
+- Empty station/pollutant combinations are handled gracefully (`0/168`, `0.00%` coverage, `N/A` average concentration and timestamps).
+
 ---
 
 ## 4. Current Development Status
