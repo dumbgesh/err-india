@@ -108,7 +108,41 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 4. Open Research Questions
+## 4. Multi-Station Data-Quality Comparison
+
+**Script:** `src/ingestion/compare_station_quality.py`  
+**Period:** 2025-08-24 to 2025-08-30  
+**Aggregation:** hourly  
+**Expected hours per pollutant per station:** 168  
+**Stations:** Vile Parle West (`site_5106`), Chakala–Andheri East (`site_5399`), Malad West (`site_5102`)  
+**Pollutants:** PM2.5 and PM10  
+**Total API records returned:** 833  
+**Truncated:** false  
+
+### Observation 4.1 — Seven-day hourly comparison
+
+| Station | Pollutant | Received | Expected | Coverage | Missing | Internal gaps | Trailing gaps | Average concentration | Duplicates |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Vile Parle West | PM2.5 | 110 | 168 | 65.48% | 58 | 37 | 21 | 10.41 | 0 |
+| Vile Parle West | PM10 | 110 | 168 | 65.48% | 58 | 37 | 21 | 41.61 | 0 |
+| Chakala–Andheri East | PM2.5 | 153 | 168 | 91.07% | 15 | 15 | 0 | 12.40 | 0 |
+| Chakala–Andheri East | PM10 | 167 | 168 | 99.40% | 1 | 1 | 0 | 45.30 | 0 |
+| Malad West | PM2.5 | 140 | 168 | 83.33% | 28 | 25 | 3 | 8.97 | 0 |
+| Malad West | PM10 | 153 | 168 | 91.07% | 15 | 12 | 3 | 27.35 | 0 |
+
+### Observation 4.2 — Sample findings
+
+*Note: These findings reflect a single seven-day historical sample (2025-08-24 to 2025-08-30) and should not be treated as permanent station reliability rankings.*
+
+1. Chakala–Andheri East had the highest coverage in this sample.
+2. Malad West had intermediate coverage.
+3. Vile Parle West had the lowest coverage.
+4. All six combinations reported zero duplicate timestamps.
+5. Vile Parle West had identical missing timestamps for PM2.5 and PM10.
+
+---
+
+## 5. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -119,7 +153,7 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 5. Important Data Principles
+## 6. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
