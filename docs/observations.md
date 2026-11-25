@@ -142,7 +142,76 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 5. Open Research Questions
+## 5. Historical Data-Quality Stability (2024 Four-Window Sample)
+
+**Script:** `src/ingestion/compare_historical_quality.py`
+
+**Aggregation:** hourly (`168` expected hours per pollutant per station per window)
+
+**Stations:** Vile Parle West (`site_5106`), Chakala–Andheri East (`site_5399`), Malad West (`site_5102`)
+
+**Pollutants:** PM2.5 and PM10
+
+**Windows:**
+- Winter: `2024-01-15` to `2024-01-21` (`937` rows returned, `truncated=False`)
+- Summer / Pre-Monsoon: `2024-04-15` to `2024-04-21` (`869` rows returned, `truncated=False`)
+- Southwest Monsoon: `2024-08-24` to `2024-08-30` (`657` rows returned, `truncated=False`)
+- Post-Monsoon: `2024-11-11` to `2024-11-17` (`556` rows returned, `truncated=False`)
+
+*Note: These results reflect a four-window 2024 historical sample and measure data availability only, not measurement accuracy. They do not establish a permanently most reliable station.*
+
+### Observation 5.1 — Four-window hourly comparison
+
+| Season | Station | Pollutant | Raw | Unique/Exp | Dups | Coverage | Missing | Internal | Trailing | Avg Conc | First Observation | Last Observation |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| Winter | Vile Parle West | PM2.5 | 167 | 167/168 | 0 | 99.40% | 1 | 1 | 0 | 33.91 | 2024-01-15 00:00 | 2024-01-21 23:00 |
+| Winter | Vile Parle West | PM10 | 167 | 167/168 | 0 | 99.40% | 1 | 1 | 0 | 73.65 | 2024-01-15 00:00 | 2024-01-21 23:00 |
+| Winter | Chakala–Andheri East | PM2.5 | 131 | 131/168 | 0 | 77.98% | 37 | 37 | 0 | 16.28 | 2024-01-16 13:00 | 2024-01-21 23:00 |
+| Winter | Chakala–Andheri East | PM10 | 167 | 167/168 | 0 | 99.40% | 1 | 1 | 0 | 67.57 | 2024-01-15 00:00 | 2024-01-21 23:00 |
+| Winter | Malad West | PM2.5 | 152 | 152/168 | 0 | 90.48% | 16 | 16 | 0 | 26.35 | 2024-01-15 00:00 | 2024-01-21 23:00 |
+| Winter | Malad West | PM10 | 153 | 153/168 | 0 | 91.07% | 15 | 15 | 0 | 90.04 | 2024-01-15 00:00 | 2024-01-21 23:00 |
+| Summer / Pre-Monsoon | Vile Parle West | PM2.5 | 162 | 162/168 | 0 | 96.43% | 6 | 6 | 0 | 37.54 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Summer / Pre-Monsoon | Vile Parle West | PM10 | 163 | 163/168 | 0 | 97.02% | 5 | 5 | 0 | 122.54 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Summer / Pre-Monsoon | Chakala–Andheri East | PM2.5 | 150 | 150/168 | 0 | 89.29% | 18 | 18 | 0 | 61.40 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Summer / Pre-Monsoon | Chakala–Andheri East | PM10 | 126 | 126/168 | 0 | 75.00% | 42 | 42 | 0 | 141.30 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Summer / Pre-Monsoon | Malad West | PM2.5 | 137 | 137/168 | 0 | 81.55% | 31 | 31 | 0 | 40.01 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Summer / Pre-Monsoon | Malad West | PM10 | 131 | 131/168 | 0 | 77.98% | 37 | 37 | 0 | 102.78 | 2024-04-15 00:00 | 2024-04-21 23:00 |
+| Southwest Monsoon | Vile Parle West | PM2.5 | 168 | 168/168 | 0 | 100.00% | 0 | 0 | 0 | 10.55 | 2024-08-24 00:00 | 2024-08-30 23:00 |
+| Southwest Monsoon | Vile Parle West | PM10 | 168 | 168/168 | 0 | 100.00% | 0 | 0 | 0 | 49.19 | 2024-08-24 00:00 | 2024-08-30 23:00 |
+| Southwest Monsoon | Chakala–Andheri East | PM2.5 | 0 | 0/168 | 0 | 0.00% | 168 | 0 | 0 | N/A | N/A | N/A |
+| Southwest Monsoon | Chakala–Andheri East | PM10 | 0 | 0/168 | 0 | 0.00% | 168 | 0 | 0 | N/A | N/A | N/A |
+| Southwest Monsoon | Malad West | PM2.5 | 156 | 156/168 | 0 | 92.86% | 12 | 12 | 0 | 12.90 | 2024-08-24 00:00 | 2024-08-30 23:00 |
+| Southwest Monsoon | Malad West | PM10 | 165 | 165/168 | 0 | 98.21% | 3 | 3 | 0 | 47.49 | 2024-08-24 00:00 | 2024-08-30 23:00 |
+| Post-Monsoon | Vile Parle West | PM2.5 | 135 | 135/168 | 0 | 80.36% | 33 | 33 | 0 | 37.21 | 2024-11-11 00:00 | 2024-11-17 23:00 |
+| Post-Monsoon | Vile Parle West | PM10 | 143 | 143/168 | 0 | 85.12% | 25 | 25 | 0 | 139.89 | 2024-11-11 00:00 | 2024-11-17 23:00 |
+| Post-Monsoon | Chakala–Andheri East | PM2.5 | 0 | 0/168 | 0 | 0.00% | 168 | 0 | 0 | N/A | N/A | N/A |
+| Post-Monsoon | Chakala–Andheri East | PM10 | 0 | 0/168 | 0 | 0.00% | 168 | 0 | 0 | N/A | N/A | N/A |
+| Post-Monsoon | Malad West | PM2.5 | 148 | 148/168 | 0 | 88.10% | 20 | 20 | 0 | 55.82 | 2024-11-11 00:00 | 2024-11-17 23:00 |
+| Post-Monsoon | Malad West | PM10 | 130 | 130/168 | 0 | 77.38% | 38 | 38 | 0 | 172.16 | 2024-11-11 00:00 | 2024-11-17 23:00 |
+
+### Observation 5.2 — Cross-window coverage summary
+
+| Station | Pollutant | Winter | Summer / Pre-Monsoon | Southwest Monsoon | Post-Monsoon | Four-Window Mean Coverage |
+|---|---|---:|---:|---:|---:|---:|
+| Vile Parle West | PM2.5 | 99.40% | 96.43% | 100.00% | 80.36% | 94.05% |
+| Vile Parle West | PM10 | 99.40% | 97.02% | 100.00% | 85.12% | 95.39% |
+| Chakala–Andheri East | PM2.5 | 77.98% | 89.29% | 0.00% | 0.00% | 41.82% |
+| Chakala–Andheri East | PM10 | 99.40% | 75.00% | 0.00% | 0.00% | 43.60% |
+| Malad West | PM2.5 | 90.48% | 81.55% | 92.86% | 88.10% | 88.24% |
+| Malad West | PM10 | 91.07% | 77.98% | 98.21% | 77.38% | 86.16% |
+
+*Note: `Four-Window Mean Coverage` is the arithmetic mean of coverage across all four selected seven-day calendar windows, including windows with zero observations.*
+
+### Observation 5.3 — Evidence-based findings (2024 sample)
+
+1. **Station completeness varies substantially across time:** Vile Parle West (`site_5106`) had the lowest coverage in the August 2025 sample (65.48%), yet achieved the highest mean coverage across the four 2024 windows (94.05% PM2.5, 95.39% PM10, including 100.00% in Southwest Monsoon 2024).
+2. **Extended outage at Chakala–Andheri East (`site_5399`):** Although `site_5399` had the highest coverage in the August 2025 sample, it returned 0/168 records (0.00%) for both PM2.5 and PM10 in both the Southwest Monsoon and Post-Monsoon 2024 windows.
+3. **Consistent intermediate coverage at Malad West (`site_5102`):** Malad West maintained 77.38%–98.21% coverage across all four 2024 windows (mean 88.24% PM2.5, 86.16% PM10).
+4. **Zero duplicate timestamps:** All 24 station–pollutant–window combinations reported `0` duplicate timestamps, and all timestamps were naive IST as specified by XKDR metadata.
+
+---
+
+## 6. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -153,7 +222,7 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 6. Important Data Principles
+## 7. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
