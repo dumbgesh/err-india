@@ -361,9 +361,61 @@ It does not establish continuous monitoring throughout each hour.
 - All three stations show a consistent seasonal cycle: **Winter** (`PM2.5` mean `60.88–85.25`, `PM10` `160.41–166.47`) > **Post-Monsoon** (`50.45–62.58`, `121.76–139.12`) > **Pre-Monsoon** (`31.52–49.49`, `115.97–123.37`) > **Monsoon** (`13.85–18.12`, `47.07–70.27`).
 - Differences in mean levels across stations (e.g., `site_5399` PM2.5 mean `50.80` vs. `site_5102` `35.69`) reflect local site/meteorological exposure and differing active windows as much as any sensor effects, and cannot be treated as sensor error without co-located reference data.
 
+### Observation 9.4 — Targeted anomaly verification & QA classification
+
+Cross-station and co-pollutant verification (`src/preprocessing/investigate_anomalies.py`) established:
+
+| Case | Station & Pollutant | Pattern | Cross-Station / Co-Pollutant Evidence | Classification | Recommended QA Treatment |
+|---|---|---|---|---|---|
+| A | `site_5106` PM10 | `167` hrs at `985.0` (`147` in May–Aug 2022, runs up to `24`h) | During `2022-08-15`–`16` `24`h run, `site_5106` PM2.5 was `8.12`–`17.88`, `site_5399` PM10 `7.34`–`12.67`, `site_5102` PM10 `20.47`–`31.77` | Strongly suspicious | Mask from training targets; retain raw with QA flag |
+| B | `site_5106` PM2.5 | `183`h flatline at `81.0` (`2023-02-03`–`2023-02-11`) | Co-located PM10 (`179` unique, `83.0`–`422.8`) and both neighbours varied normally | Strongly suspicious | Mask from training targets; retain raw with QA flag |
+| C | `site_5399` PM10 | `159`h flatline at `31.63` (`2026-06-07`–`2026-06-13`) | Co-located PM2.5 varied normally (`155` unique, `6.18`–`26.73`); other two stations have no 2026 data | Strongly suspicious | Mask from training targets; retain raw with QA flag |
+| D | `site_5102` PM2.5 & PM10 | Simultaneous `101`h (`22.0`) & `98`h (`142.0`) flatlines (Mar 2020) | Both pollutants froze simultaneously while `site_5106` varied normally (`PM2.5` `1.44`–`130.58`, `PM10` `28.06`–`214.94`) | Strongly suspicious | Mask from training targets; retain raw with QA flag |
+| E | `site_5399` PM2.5 | `3` exact `0.0` readings (`2026-02-20 08:00`–`09:00`, `2026-03-05 12:00`) | `2026-02-20` pair occurred right before a gap while co-located PM10 was `222.75` / `215.0`; `2026-03-05` occurred when PM10 was `7.0` | Requires further investigation | Retain with QA flag; exclude only if calibration metadata confirms fault |
+
 ---
 
-## 10. Open Research Questions
+## 10. Historical Weather Validation Pilot (February 2024)
+
+**Script:** `src/ingestion/validate_weather_pilot.py`
+
+**Month Selection:** February 2024 (`2024-02-01` to `2024-02-29`, `696` hours) was selected because it provides the strongest overlapping PM2.5 and PM10 coverage across all three stations (`82.8%`–`97.3%`).
+
+**Dataset Selection:** Open-Meteo `era5` (`0.25°` reanalysis) was selected over `era5_land` after a 1-day probe showed `era5_land` returned `24/24` nulls for wind, precipitation, surface pressure, and cloud cover, whereas `era5` returned `0` nulls across all 7 variables.
+
+### Observation 10.1 — Weather retrieval, grid snapping & quality checks
+
+- All 3 stations returned HTTP `200` (`2.47s`–`3.56s`), `696/696` hourly rows, `0` missing timestamps, `0` duplicate timestamps, `0` nulls, and `0` out-of-bounds physical values.
+- **Shared ERA5 grid cell:** `site_5106` (`19.10861, 72.83622`) and `site_5399` (`19.11074, 72.86084`) both snapped to `(19.0, 73.0)`, while `site_5102` (`19.19709, 72.82204`) snapped to `(19.25, 73.0)`. Thus `site_5106` and `site_5399` receive identical `era5` weather values, meaning station-level microclimate differences are not captured.
+
+### Observation 10.2 — Air-quality + weather LEFT JOIN (`2024-02`)
+
+| Station | Pollutant | AQ Rows | Matched Weather Rows | Unmatched AQ Rows | Join Coverage | Missing Weather After Join |
+|---|---|---:|---:|---:|---:|---:|
+| `site_5106` | PM2.5 | 668 | 668 | 0 | 100.00% | 0 |
+| `site_5106` | PM10 | 668 | 668 | 0 | 100.00% | 0 |
+| `site_5399` | PM2.5 | 677 | 677 | 0 | 100.00% | 0 |
+| `site_5399` | PM10 | 629 | 629 | 0 | 100.00% | 0 |
+| `site_5102` | PM2.5 | 577 | 577 | 0 | 100.00% | 0 |
+| `site_5102` | PM10 | 576 | 576 | 0 | 100.00% | 0 |
+
+### Observation 10.3 — Forecast backtesting API assessment
+
+- **Recommended for 24h / 48h / 72h backtesting:** Open-Meteo's **Previous Model Runs API** (`_previous_day1`, `_previous_day2`, `_previous_day3` for 24h, 48h, and 72h lead times; archived from ~Jan 2024 for most global models) provides continuous historical forecast series at fixed lead times, preventing data leakage from using realized `ERA5` weather during evaluation.
+- **Historical Forecast API** stitches together only the first few hours of each run (best-case short-range weather, not 72h lead time), while **Single Runs API** retrieves individual full-horizon runs by initialization time (archived from ~Mar 2024 for ECMWF IFS).
+
+### Observation 10.4 — February 2024 Previous Model Runs validation (`24h`, `48h`, `72h`)
+
+Tested `src/ingestion/validate_forecast_backtest.py` for `2024-02-01`–`2024-02-29` (`696` hours, `site_5106`, `site_5399`, `site_5102`):
+
+- **Model availability:** `ecmwf_ifs025` returned `0/72` non-null rows in the `2024-02-01`–`2024-02-03` probe and was excluded. Both `gfs_global` and `icon_global` returned **100.0% (`696/696` hours)** non-null coverage across all 3 stations, all 7 variables, and all 3 lead times (`24h`, `48h`, `72h`).
+- **Comparison vs. ERA5 (`2024-02` mean MAE across 3 stations):**
+  - `icon_global` outperformed `gfs_global` on every continuous variable: `temperature_2m` (`1.22–1.27 °C` vs `2.43–2.57 °C`), `relative_humidity_2m` (`7.92–9.35 %` vs `23.55–24.54 %`), `wind_speed_10m` (`4.15–4.22 km/h` vs `4.52–4.67 km/h`), `wind_direction_10m` (`20.00–21.90 °` vs `22.90–27.54 °`), `surface_pressure` (`0.39–0.58 hPa` vs `0.67–0.79 hPa`).
+- **Recommended backtesting model:** **`icon_global`** via the Previous Model Runs API for 2024+ evaluation, while noting two limitations: (1) archived Previous Runs data does not cover `2019–2023`, and (2) the API provides fixed daily lead-time offsets (`_previous_day1/2/3`) rather than explicit per-row `issue_time` timestamps.
+
+---
+
+## 11. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -374,7 +426,7 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 11. Important Data Principles
+## 12. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
