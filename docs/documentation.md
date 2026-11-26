@@ -228,6 +228,58 @@ Methods and assumptions:
 - **Temporal screening:** Aggregates `count`, `zero_count`, `mean`, `median`, and `P95` by `hour_of_day`, `day_of_week`, `season`, `year`, and `year_month`, keeping missing periods separate from `0.0` readings.
 - Saves outputs under `data/processed/measurement_quality/` (`measurement_summary.csv`, `anomaly_flags.csv`, `flatline_summary.csv`, `temporal_summary.csv`, `quality_report.json`) without removing or imputing any values.
 
+### 3.11 Targeted Measurement Anomaly Verification & QA Policy
+
+Script: `src/preprocessing/investigate_anomalies.py`
+
+Input:
+- `data/processed/measurement_quality/filtered_measurements_2019_2026.parquet` (read-only).
+
+Methodology:
+- Cross-checks five flagged anomaly cases (A–E) against co-located pollutants (`PM2.5` vs. `PM10`) and overlapping neighbouring stations (`site_5106`, `site_5399`, `site_5102`).
+- Classifies findings into `Confirmed invalid`, `Strongly suspicious`, `Requires further investigation`, or `Plausible environmental event`, and defines a non-destructive QA policy (`qa_policy.json`) that masks strongly suspicious targets during model training while retaining raw measurements with QA flags.
+- Saves `targeted_anomaly_investigation.csv`, `qa_policy.json`, and `investigation_report.md` under `data/processed/measurement_quality/`.
+
+### 3.12 Historical Weather Validation Pilot (Open-Meteo ERA5)
+
+Script: `src/ingestion/validate_weather_pilot.py`
+
+Configuration:
+- Provider & Endpoint: Open-Meteo Historical Weather API (`https://archive-api.open-meteo.com/v1/archive`)
+- Model: `era5` (selected over `era5_land` because `era5_land` returned nulls for `wind_speed_10m`, `wind_direction_10m`, `precipitation`, `surface_pressure`, and `cloud_cover`, whereas `era5` provides all 7 variables consistently)
+- Period: February 2024 (`2024-02-01` to `2024-02-29`, `696` expected hours in leap year 2024)
+- Timezone: `Asia/Kolkata` (naive IST, matching XKDR `cpcb_caaqm` timestamps)
+- Variables: `temperature_2m` (`°C`), `relative_humidity_2m` (`%`), `wind_speed_10m` (`km/h`), `wind_direction_10m` (`°`), `precipitation` (`mm`), `surface_pressure` (`hPa`), `cloud_cover` (`%`)
+
+Methodology:
+- Queries all three stations using their exact XKDR coordinates (`site_5106`, `site_5399`, `site_5102`).
+- Validates HTTP status, request latency, expected vs. actual hourly rows, missing/duplicate timestamps, per-variable nulls, physical bounds, and shared grid cells.
+- Performs a `LEFT JOIN` from February 2024 air-quality records (`filtered_measurements_2019_2026.parquet`) to historical weather on `(station_id, timestamp_ist)` while preserving QA flags and keeping raw weather separate from aligned features.
+- Saves outputs under `data/processed/weather_pilot/` (`weather_historical_2024_02.csv`/`.parquet`, `aq_weather_join_2024_02.parquet`, `station_metadata.csv`, `join_summary.csv`, `validation_report.json`, `processing_manifest.json`).
+
+### 3.13 Historical Forecast Backtesting Feasibility (Previous Model Runs API)
+
+Script: `src/ingestion/validate_forecast_backtest.py`
+
+Configuration:
+- Endpoint: `https://previous-runs-api.open-meteo.com/v1/forecast`
+- Period: February 2024 (`2024-02-01` to `2024-02-29`, `696` hours, `timezone=Asia/Kolkata`)
+- Lead-time offsets: `_previous_day1` (`24h`), `_previous_day2` (`48h`), `_previous_day3` (`72h`) across all 7 weather variables.
+- Models tested independently (never mixed): `gfs_global`, `icon_global` (after a 3-day probe showed `ecmwf_ifs025` had `0/72` non-null values in early Feb 2024).
+
+Outputs saved under `data/processed/weather_backtest_pilot/`:
+- `backtest_station_metadata.csv`, `backtest_coverage.csv`, `backtest_vs_era5.csv`, `backtest_manifest.json`.
+
+---
+
+## 5. Proposed Architecture: Caching & Data Flow (Draft)
+
+> **Status:** Proposed / potential architecture only — **not yet implemented**.
+
+The diagram below illustrates a potential caching architecture for future ERR data ingestion and serving workflows:
+
+![Potential Caching Architecture](assets/potential_caching_architecture.png)
+
 ---
 
 ## 4. Current Development Status
