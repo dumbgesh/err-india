@@ -1,2 +1,3 @@
 requests
 python-dotenv
+duckdb==2.0.1

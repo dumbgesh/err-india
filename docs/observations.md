@@ -211,7 +211,159 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 6. Open Research Questions
+## 6. Single-Month DuckDB Validation (August 2024)
+
+**Script:** `src/ingestion/validate_duckdb_month.py`
+
+**Target Partition:** `v1/measurements/year=2024/month=08/data.parquet` (`6,096,671` total rows, `10,494,768` bytes / ~10.01 MiB)
+
+**Partition Scope Correction:** June 2019 through November 2026 comprises **90 calendar months** (`713.88 MB` total across those 90 Parquet files), not 95 (which had included `2019-01` through `2019-05`).
+
+### Observation 6.1 — Remote HTTP Range & DuckDB `httpfs` Verification
+
+- `HEAD` on `v1/measurements/year=2024/month=08/data.parquet` returned HTTP `200`, `Accept-Ranges: bytes`, `Content-Length: 10494768`.
+- `Range: bytes=0-63` returned HTTP `206 Partial Content` with Parquet magic bytes `PAR1`.
+- DuckDB `EXPLAIN ANALYZE` (`httpfs`) transferred `3.2 MiB` (`Data Read: 3.3 MB`) across `1` `HEAD` and `7` `GET` Range requests in `2.57s`, returning `2,678` filtered rows out of `6,096,671` (~68% byte reduction vs. full-file download).
+
+### Observation 6.2 — August 2024 Raw Cadence & Completeness (`744` Expected Hours)
+
+| Station | Pollutant | Raw | Nulls | UniqTS | Dups | UniqHr | Obs/Hr (min-max) | Gap Min (min/med/max) | Lead/Int/Trail | MaxGapHr | First Observation | Last Observation |
+|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|
+| Vile Parle West (`site_5106`) | PM2.5 | 678 | 0 | 678 | 0 | 678 | 1-1 | 60/60/1620 | 0/66/0 | 26 | 2024-08-01 00:00 | 2024-08-31 23:00 |
+| Vile Parle West (`site_5106`) | PM10 | 672 | 0 | 672 | 0 | 672 | 1-1 | 60/60/1620 | 0/72/0 | 26 | 2024-08-01 00:00 | 2024-08-31 23:00 |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | 0 | 0 | 0 | 0 | 0 | N/A | N/A | EMPTY(744) | 744 | N/A | N/A |
+| Chakala–Andheri East (`site_5399`) | PM10 | 0 | 0 | 0 | 0 | 0 | N/A | N/A | EMPTY(744) | 744 | N/A | N/A |
+| Malad West (`site_5102`) | PM2.5 | 646 | 0 | 646 | 0 | 646 | 1-1 | 60/60/1020 | 0/98/0 | 16 | 2024-08-01 00:00 | 2024-08-31 23:00 |
+| Malad West (`site_5102`) | PM10 | 682 | 0 | 682 | 0 | 682 | 1-1 | 60/60/1020 | 0/62/0 | 16 | 2024-08-01 00:00 | 2024-08-31 23:00 |
+
+**Cadence finding:** All observed records for `site_5106` and `site_5102` in August 2024 have strictly `1` observation per hour (`min=1, max=1`), `0` nulls, `0` duplicate timestamps, and a minimum/median consecutive interval of `60` minutes. This confirms that hourly availability is an appropriate metric for these series in this month.
+
+### Observation 6.3 — Baseline Reproduction (`2024-08-24` to `2024-08-30`, `168` Hours)
+
+| Station | Pollutant | DuckDB Raw | DuckDB Hrs | API Hrs | DuckDB Mean | API Mean | Match? |
+|---|---|---:|---:|---:|---:|---:|---|
+| Vile Parle West (`site_5106`) | PM2.5 | 168 | 168/168 | 168/168 | 10.55 | 10.55 | YES |
+| Vile Parle West (`site_5106`) | PM10 | 168 | 168/168 | 168/168 | 49.19 | 49.19 | YES |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | 0 | 0/168 | 0/168 | N/A | N/A | YES |
+| Chakala–Andheri East (`site_5399`) | PM10 | 0 | 0/168 | 0/168 | N/A | N/A | YES |
+| Malad West (`site_5102`) | PM2.5 | 156 | 156/168 | 156/168 | 12.90 | 12.90 | YES |
+| Malad West (`site_5102`) | PM10 | 165 | 165/168 | 165/168 | 47.49 | 47.49 | YES |
+
+### Observation 6.4 — Limitations & Unresolved Questions
+
+1. **Cadence in other months:** While August 2024 is strictly hourly (`1` obs/hr) for `site_5106` and `site_5102`, the multi-month script should still check `Obs/Hr` per month in case sub-hourly intervals appear in earlier years.
+2. **Data availability vs. accuracy:** Validating hourly availability does not verify sensor calibration or value quality.
+
+---
+
+## 7. 2024 Annual Historical Data-Quality Pilot
+
+**Script:** `src/ingestion/analyze_duckdb_2024.py`
+
+**Scope:** All 12 monthly 2024 XKDR Parquet partitions (`2024-01` through `2024-12`, `8,784` calendar hours in leap year 2024), queried remotely via DuckDB `httpfs`.
+
+**Processing & Validation:** All 12 partitions (`status=ok`) were processed cleanly. August 2024 full-month valid-hour counts and the `2024-08-24`–`2024-08-30` API baseline matched `100%` with zero discrepancies.
+
+### Observation 7.1 — Station-wise monthly availability (% of calendar hours with valid values)
+
+| Station | Pollutant | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | Annual Valid Hours |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Vile Parle West (`site_5106`) | PM2.5 | 97.4% | 96.0% | 86.4% | 94.4% | 72.0% | 66.8% | 95.0% | 91.1% | 89.0% | 83.5% | 89.6% | 79.7% | 7,618 / 8,784 (86.73%) |
+| Vile Parle West (`site_5106`) | PM10 | 87.1% | 96.0% | 88.8% | 94.9% | 71.2% | 67.8% | 90.5% | 90.3% | 90.7% | 86.4% | 90.7% | 84.3% | 7,599 / 8,784 (86.51%) |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | 73.0% | 97.3% | 94.0% | 95.7% | 86.8% | 93.1% | 23.8% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 4,101 / 8,784 (46.69%) |
+| Chakala–Andheri East (`site_5399`) | PM10 | 94.4% | 90.4% | 99.6% | 88.8% | 73.0% | 99.2% | 22.6% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 4,136 / 8,784 (47.09%) |
+| Malad West (`site_5102`) | PM2.5 | 89.4% | 82.9% | 88.6% | 82.9% | 85.5% | 82.1% | 74.2% | 86.8% | 82.4% | 87.4% | 92.5% | 87.9% | 7,486 / 8,784 (85.22%) |
+| Malad West (`site_5102`) | PM10 | 89.4% | 82.8% | 62.5% | 85.0% | 86.2% | 88.8% | 78.2% | 91.7% | 83.8% | 83.7% | 92.6% | 89.0% | 7,417 / 8,784 (84.44%) |
+
+### Observation 7.2 — Cadence, gaps, and zero-observation months
+
+- **Strictly hourly cadence in 2024:** Across all active station–pollutant–month combinations, `nulls = 0`, `duplicates = 0`, `max_obs_per_hour = 1`, and consecutive timestamp intervals had `min = 60` min and `median = 60` min.
+- **Zero-observation months (`status = no_records`):** Chakala–Andheri East (`site_5399`) had zero `PM2.5` and `PM10` records for **five consecutive months** (`2024-08` through `2024-12`), following a drop to `23.8%` / `22.6%` in `2024-07`. (This indicates missing particulate records, not necessarily that the entire station was offline.)
+- **Longest single-month missing-hour gaps:**
+  - `site_5106`: `108` hours (PM2.5 and PM10)
+  - `site_5102`: `40` hours (PM2.5) and `46` hours (PM10)
+  - `site_5399`: `744` hours (full-month gaps in `2024-08`, `2024-10`, `2024-12`, and `720` hours in `2024-09`, `2024-11`)
+- **Availability vs. accuracy:** These metrics quantify historical data availability only; sensor calibration and value accuracy remain to be evaluated separately.
+
+---
+
+## 8. Full Historical Continuity Analysis (June 2019–November 2026)
+
+**Script:** `src/ingestion/analyze_duckdb_full_history.py`
+
+**Scope:** `90` calendar months (`2019-06` through `2026-11`, `65,760` calendar hours) for `site_5106`, `site_5399`, and `site_5102` (`PM2.5` and `PM10`).
+
+**Partial-Month Export Note:** The XKDR archive was exported at `2026-11-24T06:54:03+00:00` (`2026-11-24 12:24:03 IST`), making `2026-11` a partial month. The `65,760`-hour calendar-window denominator is preserved below for consistency with monthly tables, but it includes `155` post-export hours (`2026-11-24 13:00`–`2026-11-30 23:00`). Up to the export cutoff, the window contains `65,605` hours. **Active-period availability and active-period internal gaps are unaffected by this cutoff.**
+
+**Processing & Validation:** All `90` partitions returned `status=ok` (`failed=0`, `unavailable=0`), yielding `234,645` filtered records (`540` monthly station–pollutant rows). Cross-check against the 2024 annual pilot (`72` rows) passed with zero discrepancies.
+
+### Observation 8.1 — Station–pollutant historical availability summary
+
+| Station | Pollutant | Full-Window (`65,760`h, incl. 155 post-export hrs) | Up-to-Export (`65,605`h) | Confirmed Active Span | Active-Period Availability | Zero-Record Months | Nulls | Duplicates |
+|---|---|---:|---:|---|---:|---:|---:|---:|
+| Vile Parle West (`site_5106`) | PM2.5 | 64.31% (`42,292`) | 64.46% | `2019-06-03 15:00` – `2025-08-30 02:00` | 77.30% | 19 | 0 | 0 |
+| Vile Parle West (`site_5106`) | PM10 | 65.02% (`42,760`) | 65.18% | `2019-06-03 15:00` – `2025-08-30 02:00` | 78.16% | 19 | 0 | 0 |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | 58.97% (`38,776`) | 59.11% | `2020-12-08 09:00` – `2026-11-08 23:00` | 74.74% | 27 | 0 | 0 |
+| Chakala–Andheri East (`site_5399`) | PM10 | 58.95% (`38,766`) | 59.09% | `2020-12-08 09:00` – `2026-11-08 23:00` | 74.72% | 27 | 0 | 0 |
+| Malad West (`site_5102`) | PM2.5 | 60.06% (`39,495`) | 60.20% | `2019-06-03 14:00` – `2025-09-01 00:00` | 72.13% | 18 | 0 | 0 |
+| Malad West (`site_5102`) | PM10 | 49.51% (`32,556`) | 49.62% | `2019-06-03 14:00` – `2025-09-01 00:00` | 59.46% | 27 | 0 | 0 |
+
+### Observation 8.2 — Cross-month longest missing-hour gaps
+
+| Station | Pollutant | Full-Window Longest Gap | Active-Period Longest Internal Gap |
+|---|---|---|---|
+| Vile Parle West (`site_5106`) | PM2.5 | `10,989` hrs (`2025-08-30 03:00` – `2026-11-30 23:00`) | `2,160` hrs (`2025-01-01 00:00` – `2025-03-31 23:00`) |
+| Vile Parle West (`site_5106`) | PM10 | `10,989` hrs (`2025-08-30 03:00` – `2026-11-30 23:00`) | `2,160` hrs (`2025-01-01 00:00` – `2025-03-31 23:00`) |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | `13,353` hrs (`2019-06-01 00:00` – `2020-12-08 08:00`) | `5,931` hrs (`2024-07-08 13:00` – `2025-03-12 15:00`) |
+| Chakala–Andheri East (`site_5399`) | PM10 | `13,353` hrs (`2019-06-01 00:00` – `2020-12-08 08:00`) | `5,943` hrs (`2024-07-08 01:00` – `2025-03-12 15:00`) |
+| Malad West (`site_5102`) | PM2.5 | `10,943` hrs (`2025-09-01 01:00` – `2026-11-30 23:00`) | `2,160` hrs (`2025-01-01 00:00` – `2025-03-31 23:00`) |
+| Malad West (`site_5102`) | PM10 | `10,943` hrs (`2025-09-01 01:00` – `2026-11-30 23:00`) | `6,745` hrs (`2020-10-25 16:00` – `2021-08-02 16:00`) |
+
+### Observation 8.3 — Cadence and continuity findings
+
+1. **Hourly timestamp resolution, with substantial reporting gaps:** Every active station–pollutant–month had `max_obs_per_hour = 1`, `min_interval_min = 60`, `median_interval_min = 60`, `0` nulls, and `0` duplicate timestamps. This establishes hourly timestamp resolution, not uninterrupted reporting, as all three stations exhibit multi-month gaps.
+2. **2025 Q1 zero-record gap (`2025-01`–`2025-03`):** All three stations had zero `PM2.5` and `PM10` records in `2025-01` and `2025-02` (extending through `2025-03` for `site_5106` and `site_5102`, creating a `2,160`-hour internal gap).
+3. **Divergent active windows:** `site_5106` and `site_5102` span `2019-06` to `2025-08`/`2025-09`, whereas `site_5399` PM2.5/PM10 starts `2020-12-08` and continues to `2026-11-08` (with an `~8`-month internal gap in `2024-07`–`2025-03`).
+4. **Pollutant-specific outage at `site_5102`:** Malad West PM10 experienced a `6,745`-hour (~9.3-month) gap in `2020-10`–`2021-08` while PM2.5 continued reporting.
+
+---
+
+## 9. Measurement Quality & Anomaly Screening (2019–2026)
+
+**Script:** `src/preprocessing/screen_measurement_quality.py`
+
+**Scope:** All `234,645` filtered hourly observations across `site_5106`, `site_5399`, and `site_5102` (`PM2.5` and `PM10`).
+
+### Observation 9.1 — Measurement distributions & invalid/zero counts
+
+| Station | Pollutant | Observations | Nulls | Negatives | Zeros | Min | Median | Mean | P95 | P99 | Max |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Vile Parle West (`site_5106`) | PM2.5 | 42,292 | 0 | 0 | 0 | 0.01 | 28.20 | 42.53 | 115.28 | 167.22 | 985.00 |
+| Vile Parle West (`site_5106`) | PM10 | 42,760 | 0 | 0 | 0 | 0.09 | 88.93 | 116.04 | 262.40 | 667.47 | 985.00 |
+| Chakala–Andheri East (`site_5399`) | PM2.5 | 38,776 | 0 | 0 | 3 | 0.00 | 37.67 | 50.80 | 135.20 | 193.02 | 947.44 |
+| Chakala–Andheri East (`site_5399`) | PM10 | 38,766 | 0 | 0 | 0 | 0.04 | 88.25 | 108.46 | 261.56 | 399.96 | 976.83 |
+| Malad West (`site_5102`) | PM2.5 | 39,495 | 0 | 0 | 0 | 0.02 | 26.38 | 35.69 | 91.26 | 120.76 | 301.96 |
+| Malad West (`site_5102`) | PM10 | 32,556 | 0 | 0 | 0 | 0.59 | 87.72 | 108.54 | 262.18 | 382.55 | 1000.00 |
+
+- **Confirmed invalid values:** `0` negative values and `0` nulls across all `234,645` observations; only `3` exact `0.0` readings exist (`site_5399` PM2.5).
+
+### Observation 9.2 — Extreme values, 1-hour jumps, and flatlines
+
+- **Statistical extremes & 1-hour jumps (requiring investigation, not automatically invalid):** Every series exhibits right-skewed pollution tails (`>3.0×IQR`: `88`–`719` rows; `robust Z > 3.5`: `511`–`1,757` rows) and abrupt 1-hour jumps (`1h_spikes`: `568`–`1,033`; `1h_drops`: `581`–`1,058`).
+- **Sensor-ceiling & stuck-value flatlines (`>= 4h`):**
+  - `site_5106` PM2.5: `13` runs `>= 4h`, max `183` hours at `81.0` (`2023-02-03 14:00`–`2023-02-11 04:00`).
+  - `site_5106` PM10: `20` runs `>= 4h`, max `34` hours; notably includes repeated `985.0` saturation flatlines (`24h`, `17h`, `13h`, `12h`, `9h`, `5h`) in May–August 2022 (which also inflate `site_5106` PM10 `P99 = 667.47`).
+  - `site_5399` PM10: `2` runs `>= 4h`, max `159` hours at `31.63` (`2026-06-07 04:00`–`2026-06-13 18:00`).
+  - `site_5102` PM2.5 & PM10: simultaneous flatlines in March 2020 (`101h` at `22.0` PM2.5; `98h` at `142.0` PM10).
+
+### Observation 9.3 — Seasonal and station patterns
+
+- All three stations show a consistent seasonal cycle: **Winter** (`PM2.5` mean `60.88–85.25`, `PM10` `160.41–166.47`) > **Post-Monsoon** (`50.45–62.58`, `121.76–139.12`) > **Pre-Monsoon** (`31.52–49.49`, `115.97–123.37`) > **Monsoon** (`13.85–18.12`, `47.07–70.27`).
+- Differences in mean levels across stations (e.g., `site_5399` PM2.5 mean `50.80` vs. `site_5102` `35.69`) reflect local site/meteorological exposure and differing active windows as much as any sensor effects, and cannot be treated as sensor error without co-located reference data.
+
+---
+
+## 10. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -222,7 +374,7 @@ It does not establish continuous monitoring throughout each hour.
 
 ---
 
-## 7. Important Data Principles
+## 11. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
