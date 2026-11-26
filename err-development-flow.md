@@ -1,112 +1,142 @@
-# ERR — Project Development Roadmap
+# ERR — Development Roadmap
 
-**Project:** India-wide Air Quality Intelligence & Forecasting Platform
+**An ML-driven air quality intelligence platform for India.**
 
-Legend:
-- 🟢 Green = Completed
-- ⚪ Grey = Pending / Upcoming
+This roadmap tracks ERR's development from initial research and data exploration to historical analysis, forecasting, and deployment.
+
+### Development overview
+
+🟢 Completed &nbsp; | &nbsp; ⚪ Upcoming
 
 ```mermaid
-flowchart TD
+flowchart LR
+    A["PROJECT FOUNDATION<br/>Setup · Python · Git · Environment"] 
+    B["DATA EXPLORATION<br/>XKDR API · Stations · Historical data"]
+    C["DATA QUALITY RESEARCH<br/>Station comparison · Seasonal analysis"]
+    D["SCALABLE DATA PIPELINE<br/>Parquet · DuckDB · 2024 validation"]
+    E["HISTORICAL ANALYSIS<br/>2019–2026 continuity · Reliability"]
+    F["FORECASTING FOUNDATION<br/>Weather · Preprocessing · Features"]
+    G["ML DEVELOPMENT<br/>Baselines · Models · Evaluation"]
+    H["PRODUCT DEVELOPMENT<br/>Live ingestion · API · Dashboard"]
+    I["DEPLOYMENT<br/>Testing · Monitoring · Public release"]
 
-    A["🟢 Project conception<br/>ERR — India Air Quality Intelligence"] --> B["🟢 Project setup<br/>Python, virtual environment, Git and dependencies"]
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 
-    B --> C["🟢 Data source exploration<br/>XKDR API documentation and authentication"]
+    classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px;
+    classDef todo fill:#eeeeee,stroke:#999999,color:#444444,stroke-width:1.5px;
 
-    C --> D["🟢 Historical dataset inspection<br/>Metadata, stations, parameters and measurements"]
+    class A,B,C,D done;
+    class E,F,G,H,I todo;
 
-    D --> E["🟢 Mumbai station selection<br/>Vile Parle, Chakala and Malad"]
-
-    E --> F["🟢 Initial data quality analysis<br/>Single-station, one-week PM2.5 and PM10"]
-
-    F --> G["🟢 Multi-station comparison<br/>Three stations, August 2025 sample"]
-
-    G --> H["🟢 Seasonal stability analysis<br/>Four seasonal windows in 2024"]
-
-    H --> I["🟢 Technical documentation<br/>Observations, findings and README"]
-
-    I --> J["🟢 Bulk data feasibility study<br/>XKDR Parquet files and HTTP Range requests"]
-
-    J --> K["🟢 DuckDB setup<br/>httpfs and authenticated remote querying"]
-
-    K --> L["🟢 August 2024 validation<br/>DuckDB vs XKDR API — 6/6 matched"]
-
-    L --> M["🟢 Implementation code audit<br/>Security, timestamps, gaps and validation"]
-
-    M --> N["🟢 2024 annual pilot<br/>12 monthly partitions processed"]
-
-    N --> O["⚪ Full historical analysis<br/>June 2019 – November 2026"]
-
-    O --> P["⚪ Historical data quality assessment<br/>Continuity, missing periods and station reliability"]
-
-    P --> Q["⚪ Data source and station suitability assessment<br/>Select forecasting candidates"]
-
-    Q --> R["⚪ Weather data integration<br/>Historical and forecast weather"]
-
-    R --> S["⚪ Data preprocessing and feature engineering<br/>Temporal, pollutant and weather features"]
-
-    S --> T["⚪ Exploratory data analysis<br/>Seasonality, trends, correlations and pollution patterns"]
-
-    T --> U["⚪ Baseline forecasting models<br/>Naive, persistence and seasonal baselines"]
-
-    U --> V["⚪ ML model development<br/>Train and compare forecasting models"]
-
-    V --> W["⚪ Model evaluation<br/>Chronological testing, MAE, RMSE and error analysis"]
-
-    W --> X["⚪ 24-hour, 48-hour and 72-hour forecasting"]
-
-    X --> Y["⚪ Forecast confidence and uncertainty<br/>Reliability and limitations"]
-
-    Y --> Z["⚪ Live data ingestion pipeline<br/>Current air quality observations"]
-
-    Z --> AA["⚪ Forecast pipeline integration<br/>Live observations + weather forecasts + ML models"]
-
-    AA --> AB["⚪ Backend and API development<br/>FastAPI and prediction endpoints"]
-
-    AB --> AC["⚪ Dashboard development<br/>India map, station status and forecasts"]
-
-    AC --> AD["⚪ Testing and deployment<br/>Monitoring, reliability and production readiness"]
-
-    AD --> AE["⚪ ERR public release"]
-    
-    classDef completed fill:#d9f5e5,stroke:#198754,color:#14532d,stroke-width:2px;
-    classDef pending fill:#eeeeee,stroke:#888888,color:#444444,stroke-width:1.5px;
-
-    class A,B,C,D,E,F,G,H,I,J,K,L,M,N completed;
-    class O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,AB,AC,AD,AE pending;
-
-    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13 stroke:#198754,stroke-width:2px;
-    linkStyle 14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29 stroke:#999999,stroke-width:1.5px;
+    linkStyle 0,1,2,3 stroke:#16a34a,stroke-width:2px;
+    linkStyle 4,5,6,7 stroke:#999999,stroke-width:1.5px;
 ```
 
 ---
 
-## Current project status
+### Development progress
 
-| Stage | Status |
-|---|---|
-| Project setup and data exploration | 🟢 Complete |
-| Initial data quality experiments | 🟢 Complete |
-| Seasonal and station comparisons | 🟢 Complete |
-| DuckDB remote querying validation | 🟢 Complete |
-| 2024 annual pilot | 🟢 Complete |
-| Full historical analysis | ⚪ Pending execution/results |
-| Weather data integration | ⚪ Upcoming |
-| Feature engineering | ⚪ Upcoming |
-| Baseline and ML models | ⚪ Upcoming |
-| Forecast evaluation | ⚪ Upcoming |
-| Live ingestion and backend | ⚪ Upcoming |
-| Dashboard and deployment | ⚪ Upcoming |
+#### 01. Project foundation
 
-## Immediate next milestones
+<sub>🟢 COMPLETED</sub>
 
-1. Complete the June 2019–November 2026 historical analysis.
-2. Evaluate station and pollutant continuity.
-3. Decide which historical stations are suitable for model development.
-4. Integrate historical and forecast weather data.
-5. Build the forecasting dataset.
-6. Establish baseline models before attempting advanced ML.
+- Project conception and scope definition.
+- Python environment and dependencies.
+- Git repository and branch structure.
+- Project documentation and README.
+
+#### 02. Data exploration
+
+<sub>🟢 COMPLETED</sub>
+
+- XKDR API documentation and authentication.
+- Historical dataset metadata inspection.
+- Station and pollutant exploration.
+- Mumbai monitoring station selection.
+- Initial historical measurement inspection.
+
+#### 03. Data quality research
+
+<sub>🟢 COMPLETED</sub>
+
+- Single-station hourly data-quality analysis.
+- Three-station comparison.
+- Seasonal stability comparison across four 2024 windows.
+- Missing observations and reporting-gap investigation.
+
+#### 04. Scalable data pipeline
+
+<sub>🟢 COMPLETED</sub>
+
+- XKDR bulk Parquet feasibility investigation.
+- Authenticated HTTP Range request validation.
+- DuckDB and `httpfs` integration.
+- August 2024 validation against the XKDR measurements API.
+- DuckDB implementation audit.
+- Full 2024 annual pilot across 12 monthly partitions.
+
+#### 05. Historical analysis
+
+<sub>⚪ UPCOMING</sub>
+
+- Full historical analysis: June 2019 – November 2026.
+- Monthly station and pollutant availability.
+- Cross-month reporting-gap analysis.
+- Historical continuity assessment.
+- Identify suitable station–pollutant combinations for forecasting.
+
+#### 06. Forecasting foundation
+
+<sub>⚪ UPCOMING</sub>
+
+- Historical weather data integration.
+- Weather forecast data integration.
+- Data preprocessing and quality controls.
+- Temporal and meteorological feature engineering.
+- Exploratory analysis of pollutant behaviour.
+
+#### 07. Machine learning
+
+<sub>⚪ UPCOMING</sub>
+
+- Persistence and seasonal baseline models.
+- Forecasting model development.
+- Chronological train/validation/test splits.
+- MAE and RMSE evaluation.
+- 24-hour, 48-hour and 72-hour forecasts.
+- Forecast uncertainty and reliability assessment.
+
+#### 08. Product development
+
+<sub>⚪ UPCOMING</sub>
+
+- Live air-quality data ingestion.
+- Forecast pipeline integration.
+- FastAPI backend and prediction endpoints.
+- India-wide air-quality dashboard.
+- Interactive maps, station information and forecasts.
+
+#### 09. Deployment
+
+<sub>⚪ UPCOMING</sub>
+
+- Integration and end-to-end testing.
+- Production deployment.
+- Monitoring and pipeline reliability.
+- Documentation and public release.
 
 ---
 
-**Important:** A completed stage means its documented experiment or implementation has been completed. It does not mean the entire underlying problem is solved or production-ready.
+### Current development focus
+
+**Full historical data continuity analysis**
+
+We are currently moving from the validated 2024 pilot to the complete historical dataset.
+
+The immediate goal is to establish which stations and pollutants have sufficiently reliable historical coverage to support forecasting.
+
+**Next major milestone:** Build a validated historical air-quality dataset suitable for weather integration and forecasting research.
+
+---
+
+*This roadmap reflects completed experiments and planned development. Upcoming stages are not yet implemented or validated.*
