@@ -430,7 +430,25 @@ Tested `src/ingestion/validate_forecast_backtest.py` for `2024-02-01`–`2024-02
 
 ---
 
-## 12. Open Research Questions
+## 12. Archived ICON Global Forecast Ingestion (2024–2026)
+
+**Script:** `src/ingestion/ingest_archive_forecasts.py`
+
+**Scope:** `2024-01-01` through `2026-11-24` (`70` chunks: `2` `icon_global` grid cells × `35` months; `152,496` long-format Parquet rows total = `25,416` valid hours × `3` lead times × `2` cells).
+
+### Observation 12.1 — Completion, lead-time availability & January 2024 onset
+
+- **Completion & verification:** `70 / 70` chunks completed with `validation_status = "ok"` on attempt `1` (`0` retries, `0` failed, `0` `review_required`), and all `70` Parquet files passed the 8-point checkpoint and SHA-256 verification.
+- **Overall lead-time completeness (identical on both grid cells, using `temperature_2m`):**
+  - `24h` (`previous_day1`): `24,890 / 25,416` (`97.93%`)
+  - `48h` (`previous_day2`): `24,943 / 25,416` (`98.14%`)
+  - `72h` (`previous_day3`): `24,842 / 25,416` (`97.74%`)
+- **January 2024 onset (`2024-01`, `744` valid hours per lead):** `2024-01-01`–`2024-01-03` had `0%` non-null values (`1,512/1,512` nulls in probe). First non-null timestamps occurred at `2024-01-19 17:00` IST (`24h`, `295/744`), `2024-01-20 17:00` IST (`48h`, `271/744`), and `2024-01-21 17:00` IST (`72h`, `247/744`). All `9,933` null cells per grid cell in `2024-01` are preserved as `NULL`.
+- **April 2026 partial variable gaps (`2026-04`):** `66/70` chunks had `0` nulls (`2024-02`–`2026-03` and `2026-05`–`2026-11`), while `2026-04` had `693` null cells per grid cell (`77` null hours on subsets of variables/leads, while `wind_speed_10m` and `wind_direction_10m` had `0` nulls).
+
+---
+
+## 13. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -441,7 +459,7 @@ Tested `src/ingestion/validate_forecast_backtest.py` for `2024-02-01`–`2024-02
 
 ---
 
-## 13. Important Data Principles
+## 14. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
