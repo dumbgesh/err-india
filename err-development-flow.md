@@ -94,12 +94,12 @@ flowchart LR
 
 #### 07. Weather ingestion & feature alignment
 
-<sub>⚪ UPCOMING</sub>
+<sub>⚪ UPCOMING (IN PROGRESS)</sub>
 
-- Broader historical weather validation.
-- Full historical weather ingestion (`ERA5`).
-- Archived forecast weather ingestion (`icon_global`) and backtesting data preparation.
-- Air-quality and weather feature alignment with QA target masking.
+- ✅ Broader multi-season historical weather validation (`validate_weather_seasons.py`, 12/12 passed).
+- ✅ Full historical weather ingestion (`ERA5`, 2019–2026, 16/16 chunks, 131,232 rows).
+- ✅ Archived forecast weather ingestion (`icon_global`, 2024–2026, 70/70 chunks, 152,496 rows).
+- ⬜ Air-quality and weather feature alignment with QA target masking.
 
 #### 08. Machine learning & evaluation
 
