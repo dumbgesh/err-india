@@ -283,6 +283,18 @@ Architecture & scope:
 - **Retry, atomic write & 8-point checkpointing:** Bounded retries (`MAX_RETRIES=4`, `timeout=45s`), atomic temp-file writes (`os.replace`), and an 8-point verification check (manifest `ok`, file existence, DuckDB readability, schema match, row count, `MIN`/`MAX` timestamps, `grid_id`/`model` match, SHA-256 checksum) before skipping any chunk.
 - **Validation policy:** Fails on missing/duplicate timestamps, wrong timezone (`!= Asia/Kolkata` / `19800`), or mismatched array lengths; preserves nulls without zero-filling; flags out-of-range values as `review_required` (non-zero exit).
 
+### 3.15 Archived Forecast Ingestion (ICON Global)
+
+Script: `src/ingestion/ingest_archive_forecasts.py`
+
+Tests: `tests/test_archived_forecast_ingestion.py` (`unittest`, 7 mocked/edge-case tests)
+
+Architecture & scope:
+- **Endpoint & model:** Open-Meteo Previous Model Runs API (`https://previous-runs-api.open-meteo.com/v1/forecast`), `models=icon_global`, `timezone=Asia/Kolkata` (naive IST valid timestamps; exact `issue_time` is not exposed by the endpoint and is not invented).
+- **Period & chunking:** `2024-01-01` through `2026-11-24` (`35` monthly chunks × `2` deduplicated `icon_global` grid cells = `70` chunks; `grid_19.125_72.875` for `site_5106` & `site_5399`, `grid_19.25_72.875` for `site_5102`).
+- **Long-format Parquet storage:** `data/raw/weather_forecasts_archive/icon_global/<grid_id>/<YYYY-MM>.parquet` (`15` columns, storing `3` rows per `valid_timestamp_ist` for `lead_hours_nominal` in `{24, 48, 72}` mapped from `_previous_day1/2/3`), with `station_grid_mapping.csv` stored separately and manifests/reports under `data/processed/weather_forecasts_archive/`.
+- **Validation & checkpointing:** Reuses atomic writes, bounded retries, SHA-256 checksums, and 8-point checkpoint verification; fails chunks on structural/timezone/timestamp errors, preserves null forecast values without zero-filling, and flags out-of-range values as `review_required`.
+
 ---
 
 ## 5. Proposed Architecture: Caching & Data Flow (Draft)
