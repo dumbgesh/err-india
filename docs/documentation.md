@@ -270,6 +270,19 @@ Configuration:
 Outputs saved under `data/processed/weather_backtest_pilot/`:
 - `backtest_station_metadata.csv`, `backtest_coverage.csv`, `backtest_vs_era5.csv`, `backtest_manifest.json`.
 
+### 3.14 Historical ERA5 Weather Ingestion
+
+Script: `src/ingestion/ingest_historical_era5.py`
+
+Tests: `tests/test_historical_era5_ingestion.py` (`unittest`, 9 mocked/edge-case tests)
+
+Architecture & scope:
+- **Period & cutoff:** `2019-06-01` through `2026-11-24` (`8` yearly chunks per grid cell, `65,616` hours/cell), preserving `aq_export_cutoff_ist = "2026-11-24 12:24:03"` in the manifest so future AQ–weather alignment never assumes 24 hours of AQ data on `2026-11-24`.
+- **Grid-cell deduplication:** Maps the 3 Mumbai stations to 2 unique ERA5 cells (`grid_19.0_73.0` for `site_5106` & `site_5399`; `grid_19.25_73.0` for `site_5102`), storing `station_grid_mapping.csv` separately (`16` total API requests instead of `24`).
+- **Storage layout:** Immutable raw Parquet files under `data/raw/weather_historical/era5/<grid_id>/<YYYY>.parquet` (13 columns: `timestamp_ist`, `grid_id`, `grid_lat`, `grid_lon`, 7 weather variables, `model`, `source`) and metadata/reports under `data/processed/weather_historical/manifests/` and `validation/`.
+- **Retry, atomic write & 8-point checkpointing:** Bounded retries (`MAX_RETRIES=4`, `timeout=45s`), atomic temp-file writes (`os.replace`), and an 8-point verification check (manifest `ok`, file existence, DuckDB readability, schema match, row count, `MIN`/`MAX` timestamps, `grid_id`/`model` match, SHA-256 checksum) before skipping any chunk.
+- **Validation policy:** Fails on missing/duplicate timestamps, wrong timezone (`!= Asia/Kolkata` / `19800`), or mismatched array lengths; preserves nulls without zero-filling; flags out-of-range values as `review_required` (non-zero exit).
+
 ---
 
 ## 5. Proposed Architecture: Caching & Data Flow (Draft)
