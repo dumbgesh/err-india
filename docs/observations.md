@@ -415,7 +415,22 @@ Tested `src/ingestion/validate_forecast_backtest.py` for `2024-02-01`–`2024-02
 
 ---
 
-## 11. Open Research Questions
+## 11. Historical ERA5 Weather Ingestion (2019–2026)
+
+**Script:** `src/ingestion/ingest_historical_era5.py`
+
+**Period:** `2019-06-01` through `2026-11-24` (`16` chunks: `2` ERA5 grid cells × `8` yearly chunks)
+
+### Observation 11.1 — Ingestion, completeness & ERA5 lag findings
+
+- **Completion:** `16 / 16` chunks completed with `validation_status = "ok"` on attempt `1` (`0` retries, `0` failed, `0` `review_required`).
+- **Total observations:** `131,232` hourly rows (`65,616` per grid cell, `0` missing timestamps, `0` duplicates, `0` out-of-bounds values). All `16` Parquet files passed the 8-point checkpoint and SHA-256 verification.
+- **2026 trailing nulls (ERA5 publication lag):** Both grid cells have `0` nulls in `2019–2025` and `469` nulls in `2026` (`67` hours × `7` variables), because the latest non-null ERA5 reading in this retrieval is `2026-11-22 04:00:00 IST` (`2026-11-22 05:00`–`2026-11-24 23:00` are preserved as `NULL`). This does not affect `site_5399`'s 2026 AQ records, which end at `2026-11-08 23:00`.
+- **Grid-cell mapping:** `site_5106` and `site_5399` share `grid_19.0_73.0`; `site_5102` maps to `grid_19.25_73.0`.
+
+---
+
+## 12. Open Research Questions
 
 1. Do other Mumbai stations have better hourly coverage?
 2. Are missing observations concentrated at particular hours or dates?
@@ -426,7 +441,7 @@ Tested `src/ingestion/validate_forecast_backtest.py` for `2024-02-01`–`2024-02
 
 ---
 
-## 12. Important Data Principles
+## 13. Important Data Principles
 
 - Never replace missing pollutant measurements with zero automatically.
 - Preserve original station IDs and source information.
